@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{% block title %}SFMS{% endblock %} — Secure File Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #090e1a;
+  --bg2: #0f1729;
+  --bg3: #162040;
+  --card: #111827;
+  --border: #1e2d4a;
+  --accent: #00d4ff;
+  --accent2: #0066ff;
+  --green: #00e676;
+  --red: #ff3d71;
+  --orange: #ffaa00;
+  --text: #e8eeff;
+  --muted: #5a7a9a;
+  --mono: 'Space Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Navbar ── */
+.navbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2rem; height: 62px;
+  background: rgba(9,14,26,0.9);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 14px; font-weight: 700;
+  color: var(--accent); letter-spacing: 1px; text-decoration: none;
+}
+.nav-brand .lock-icon { font-size: 20px; }
+.nav-links { display: flex; align-items: center; gap: 0.5rem; }
+.nav-links a, .nav-links button {
+  padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+  color: var(--muted); text-decoration: none; background: none; border: none;
+  cursor: pointer; font-family: var(--sans); transition: all 0.2s;
+}
+.nav-links a:hover, .nav-links button:hover { color: var(--text); background: var(--bg3); }
+.nav-links a.active { color: var(--accent); }
+.badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  font-family: var(--mono);
+}
+.badge-admin { background: rgba(0,212,255,0.15); color: var(--accent); }
+.badge-user  { background: rgba(0,230,118,0.15); color: var(--green); }
+.badge-guest { background: rgba(90,122,154,0.2); color: var(--muted); }
+
+/* ── Layout ── */
+.page { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+.page-header { margin-bottom: 2rem; }
+.page-header h1 { font-size: 1.6rem; font-weight: 600; margin-bottom: 4px; }
+.page-header p { color: var(--muted); font-size: 14px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.card-sm { padding: 1rem 1.25rem; }
+
+/* ── Stat Cards ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.25rem; position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent-color, var(--accent));
+}
+.stat-num { font-family: var(--mono); font-size: 2rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  border: none; cursor: pointer; font-family: var(--sans); transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-primary { background: var(--accent2); color: #fff; }
+.btn-primary:hover { background: #0055ee; }
+.btn-accent { background: rgba(0,212,255,0.12); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+.btn-accent:hover { background: rgba(0,212,255,0.2); }
+.btn-danger { background: rgba(255,61,113,0.12); color: var(--red); border: 1px solid rgba(255,61,113,0.3); }
+.btn-danger:hover { background: rgba(255,61,113,0.2); }
+.btn-success { background: rgba(0,230,118,0.12); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+.btn-success:hover { background: rgba(0,230,118,0.2); }
+.btn-ghost { background: none; color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* ── Forms ── */
+.form-group { margin-bottom: 1.2rem; }
+.form-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.form-input {
+  width: 100%; padding: 10px 14px; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: var(--sans); font-size: 14px;
+  outline: none; transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--accent2); }
+.form-input::placeholder { color: var(--muted); }
+textarea.form-input { min-height: 120px; resize: vertical; font-family: var(--mono); font-size: 13px; }
+
+/* ── Alerts ── */
+.alerts { margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px; }
+.alert {
+  padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; gap: 8px;
+}
+.alert-success { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); color: var(--green); }
+.alert-error   { background: rgba(255,61,113,0.1); border: 1px solid rgba(255,61,113,0.3); color: var(--red); }
+.alert-warning { background: rgba(255,170,0,0.1);  border: 1px solid rgba(255,170,0,0.3);  color: var(--orange); }
+.alert-info    { background: rgba(0,212,255,0.1);  border: 1px solid rgba(0,212,255,0.3);  color: var(--accent); }
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+td { padding: 12px 16px; border-bottom: 1px solid rgba(30,45,74,0.6); }
+tr:hover td { background: rgba(255,255,255,0.02); }
+tr:last-child td { border-bottom: none; }
+
+/* ── File row ── */
+.file-name { font-family: var(--mono); font-size: 13px; }
+.enc-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+.enc-yes { background: rgba(255,170,0,0.15); color: var(--orange); }
+.enc-no  { background: rgba(0,230,118,0.1);  color: var(--green); }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Glow effects ── */
+.glow-accent { text-shadow: 0 0 20px rgba(0,212,255,0.5); }
+.glow-box { box-shadow: 0 0 30px rgba(0,102,255,0.15); }
+</style>
+{% block extra_style %}{% endblock %}
+</head>
+<body>
+{% if session.get('username') %}
+<nav class="navbar">
+  <a href="{{ url_for('dashboard') }}" class="nav-brand">
+    <span class="lock-icon">🔐</span> SFMS
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('admin_users') }}" class="{% if request.endpoint == 'admin_users' %}active{% endif %}">Users</a>
+    <a href="{{ url_for('admin_logs') }}" class="{% if request.endpoint == 'admin_logs' %}active{% endif %}">Logs</a>
+    {% endif %}
+    <span class="badge badge-{{ session.get('role', 'user') }}">{{ session.get('role', '') }}</span>
+    <span style="color:var(--muted);font-size:13px;">{{ session.get('username') }}</span>
+    <form method="POST" action="{{ url_for('logout') }}" style="display:inline;">
+      <button type="submit" style="padding:6px 14px;border-radius:6px;font-size:13px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:var(--sans);">Logout</button>
+    </form>
+  </div>
+</nav>
+{% endif %}
+{% block body %}{% endblock %}
+</body>
+</html>

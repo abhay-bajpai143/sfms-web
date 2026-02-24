@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block extra_style %}
+<style>
+body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-wrap {
+  width: 100%; max-width: 420px; padding: 1rem;
+  animation: fadeUp 0.5s ease;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.login-logo {
+  text-align: center; margin-bottom: 2rem;
+}
+.login-logo .icon { font-size: 3rem; display: block; margin-bottom: 0.75rem; filter: drop-shadow(0 0 20px rgba(0,212,255,0.4)); }
+.login-logo h1 { font-family: var(--mono); font-size: 1.4rem; color: var(--accent); letter-spacing: 2px; }
+.login-logo p  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.login-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 2rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(0,102,255,0.08);
+}
+.step-indicator {
+  display: flex; gap: 8px; margin-bottom: 1.5rem;
+}
+.step {
+  flex: 1; height: 3px; border-radius: 2px; background: var(--border);
+  transition: background 0.3s;
+}
+.step.active { background: var(--accent2); }
+.step.done   { background: var(--green); }
+.totp-input {
+  text-align: center; font-family: var(--mono); font-size: 2rem !important;
+  letter-spacing: 8px; padding: 12px !important;
+}
+.divider { text-align: center; color: var(--muted); font-size: 12px; margin: 1rem 0; }
+.register-link { text-align: center; margin-top: 1.25rem; font-size: 13px; color: var(--muted); }
+.register-link a { color: var(--accent); text-decoration: none; }
+.register-link a:hover { text-decoration: underline; }
+.enc-note { font-size: 11px; color: var(--muted); margin-top: 4px; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-logo">
+    <span class="icon">🔐</span>
+    <h1>SFMS</h1>
+    <p>Secure File Management System</p>
+  </div>
+
+  {% if messages %}
+  <div class="alerts">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+  {% endif %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="alerts">
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ 'error' if cat == 'error' else ('success' if cat == 'success' else 'info') }}">
+        {{ msg }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="login-card">
+    <div class="step-indicator">
+      <div class="step {{ 'done' if step == 'totp' else 'active' }}"></div>
+      <div class="step {{ 'active' if step == 'totp' else '' }}"></div>
+    </div>
+
+    {% if step == "password" %}
+    <h2 style="font-size:1.1rem;margin-bottom:1.5rem;font-weight:600;">Sign in to your account</h2>
+    <form method="POST" action="{{ url_for('login') }}">
+      <input type="hidden" name="step" value="password"/>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" type="text" name="username" required autofocus placeholder="Enter username"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" name="password" required placeholder="Enter password"/>
+      </div>
+      <button class="btn btn-primary btn-full" type="submit">Continue →</button>
+    </form>
+
+    {% elif step == "totp" %}
+    <h2 style="font-size:1.1rem;margin-bottom:0.5rem;font-weight:600;">Two-Factor Authentication</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem;">Enter the 6-digit code from your Authy or Google Authenticator app.</p>
+    <form method="POST" action="{{ url_for('login') }}">
+      <input type="hidden" name="step" value="totp"/>
+      <input type="hidden" name="username" value="{{ username }}"/>
+      <div class="form-group">
+        <label class="form-label">Authentication Code</label>
+        <input class="form-input totp-input" type="text" name="totp_code" maxlength="6" pattern="[0-9]{6}" required autofocus placeholder="000000"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Encryption Password</label>
+        <input class="form-input" type="password" name="enc_password" placeholder="Password used to encrypt/decrypt files"/>
+        <p class="enc-note">⚠️ Remember this — it's needed to decrypt your files</p>
+      </div>
+      <button class="btn btn-primary btn-full" type="submit">Verify & Login →</button>
+    </form>
+    {% endif %}
+
+    <div class="register-link">
+      Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

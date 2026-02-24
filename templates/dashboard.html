@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block extra_style %}
+<style>
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+@media(max-width:700px){.grid-2{grid-template-columns:1fr;}}
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:2rem; width:100%; max-width:460px; animation:fadeUp 0.25s ease; }
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.modal h2 { font-size:1.1rem; font-weight:600; margin-bottom:1.5rem; }
+.modal-close { float:right; background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.2rem; }
+.empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); }
+.empty-state .icon { font-size:3rem; margin-bottom:1rem; }
+.toolbar { display:flex; gap:0.75rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center; }
+.toolbar-right { margin-left:auto; display:flex; gap:0.75rem; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="page">
+  <div class="page-header">
+    <h1>File Manager</h1>
+    <p>Logged in as <strong>{{ username }}</strong> · Role: <span class="badge badge-{{ role }}">{{ role }}</span></p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="alerts">
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ 'error' if cat=='error' else ('success' if cat=='success' else ('warning' if cat=='warning' else 'info')) }}">
+        {{ msg }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card" style="--accent-color: var(--accent);">
+      <div class="stat-num" style="color:var(--accent);">{{ total_files }}</div>
+      <div class="stat-label">Total Files</div>
+    </div>
+    <div class="stat-card" style="--accent-color: var(--orange);">
+      <div class="stat-num" style="color:var(--orange);">{{ encrypted_count }}</div>
+      <div class="stat-label">Encrypted</div>
+    </div>
+    <div class="stat-card" style="--accent-color: var(--green);">
+      <div class="stat-num" style="color:var(--green);">{{ total_files - encrypted_count }}</div>
+      <div class="stat-label">Unencrypted</div>
+    </div>
+    <div class="stat-card" style="--accent-color: var(--red);">
+      <div class="stat-num" style="color:var(--red);">{{ threat_summary.active_lockouts|length }}</div>
+      <div class="stat-label">Active Lockouts</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    {% if role in ['admin','user'] %}
+    <button class="btn btn-primary" onclick="document.getElementById('uploadModal').classList.add('open')">⬆ Upload File</button>
+    <button class="btn btn-accent" onclick="document.getElementById('createModal').classList.add('open')">✏️ Create File</button>
+    {% endif %}
+    {% if role == 'admin' %}
+    <div class="toolbar-right">
+      <a href="{{ url_for('admin_users') }}" class="btn btn-ghost">👥 Manage Users</a>
+      <a href="{{ url_for('admin_logs') }}" class="btn btn-ghost">🛡 Security Logs</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Files Table -->
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <h2 style="font-size:1rem;font-weight:600;">📁 Stored Files</h2>
+      <span style="font-size:12px;color:var(--muted);">{{ total_files }} file{{ 's' if total_files != 1 else '' }}</span>
+    </div>
+
+    {% if files %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Size</th>
+            <th>Owner</th>
+            <th>Modified</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for file in files %}
+        <tr>
+          <td><span class="file-name">{{ file.name }}</span></td>
+          <td style="color:var(--muted);font-size:13px;">{{ file.size }}</td>
+          <td style="color:var(--muted);font-size:13px;">{{ file.owner }}</td>
+          <td style="color:var(--muted);font-size:12px;">{{ file.modified }}</td>
+          <td>
+            {% if file.encrypted %}
+            <span class="enc-badge enc-yes">🔒 Encrypted</span>
+            {% else %}
+            <span class="enc-badge enc-no">🔓 Open</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="actions">
+              {% if not file.encrypted %}
+              <a href="{{ url_for('read_file', filename=file.name) }}" class="btn btn-ghost btn-sm">👁 Read</a>
+              {% endif %}
+              {% if role in ['admin','user'] %}
+                {% if not file.encrypted %}
+                <form method="POST" action="{{ url_for('encrypt_file_route', filename=file.name) }}" style="display:inline;">
+                  <button class="btn btn-accent btn-sm" type="submit">🔒 Encrypt</button>
+                </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('decrypt_file_route', filename=file.name) }}" style="display:inline;">
+                  <button class="btn btn-success btn-sm" type="submit">🔓 Decrypt</button>
+                </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('delete_file', filename=file.name) }}" style="display:inline;" onsubmit="return confirm('Delete {{ file.name }}?');">
+                  <button class="btn btn-danger btn-sm" type="submit">🗑 Delete</button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">📭</div>
+      <p style="font-weight:500;margin-bottom:4px;">No files yet</p>
+      <p style="font-size:13px;">Upload or create a file to get started.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="uploadModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('uploadModal').classList.remove('open')">✕</button>
+    <h2>⬆ Upload File</h2>
+    <form method="POST" action="{{ url_for('upload') }}" enctype="multipart/form-data">
+      <div class="form-group">
+        <label class="form-label">Choose File</label>
+        <input class="form-input" type="file" name="file" required style="padding:8px;"/>
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:1.5rem;">
+        <button class="btn btn-primary btn-full" type="submit">Upload</button>
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('uploadModal').classList.remove('open')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Create File Modal -->
+<div class="modal-overlay" id="createModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('createModal').classList.remove('open')">✕</button>
+    <h2>✏️ Create Text File</h2>
+    <form method="POST" action="{{ url_for('create_file_route') }}">
+      <div class="form-group">
+        <label class="form-label">Filename</label>
+        <input class="form-input" type="text" name="filename" required placeholder="e.g. notes.txt"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Content</label>
+        <textarea class="form-input" name="content" placeholder="Enter file content..."></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+        <button class="btn btn-primary btn-full" type="submit">Create File</button>
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('createModal').classList.remove('open')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Account Created{% endblock %}
+{% block extra_style %}
+<style>
+body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.wrap { width:100%; max-width:480px; padding:1rem; animation:fadeUp 0.5s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);} }
+.success-card { background:var(--card); border:1px solid rgba(0,230,118,0.3); border-radius:16px; padding:2rem; box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px rgba(0,230,118,0.05); }
+.secret-box { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:1.25rem; margin:1rem 0; text-align:center; }
+.secret-val { font-family:var(--mono); font-size:1.1rem; color:var(--accent); word-break:break-all; letter-spacing:2px; }
+.steps { margin: 1rem 0; display:flex; flex-direction:column; gap:0.75rem; }
+.step-item { display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--muted); }
+.step-num { width:22px; height:22px; border-radius:50%; background:var(--accent2); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="success-card">
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="font-size:3rem;margin-bottom:0.5rem;">✅</div>
+      <h1 style="font-size:1.3rem;font-weight:600;">Account Created!</h1>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px;">Welcome, {{ username }}</p>
+    </div>
+
+    <div style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.3);border-radius:10px;padding:1rem;margin-bottom:1.25rem;">
+      <p style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px;">⚠️ SAVE THIS 2FA SECRET NOW</p>
+      <p style="font-size:12px;color:var(--muted);">You will NOT see this again. Add it to Authy immediately.</p>
+    </div>
+
+    <div class="secret-box">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Your 2FA Secret Key</p>
+      <p class="secret-val">{{ secret }}</p>
+    </div>
+
+    <div class="steps">
+      <p style="font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;">Setup Steps:</p>
+      <div class="step-item"><div class="step-num">1</div><span>Open <strong>Authy</strong> or <strong>Google Authenticator</strong> on your phone</span></div>
+      <div class="step-item"><div class="step-num">2</div><span>Tap <strong>+</strong> → <strong>Enter key manually</strong></span></div>
+      <div class="step-item"><div class="step-num">3</div><span>Account name: <code style="font-family:var(--mono);color:var(--accent);">SFMS</code>, paste the secret key above</span></div>
+      <div class="step-item"><div class="step-num">4</div><span>Select <strong>Time based</strong> → Save</span></div>
+    </div>
+
+    <a href="{{ url_for('login') }}" class="btn btn-primary btn-full" style="margin-top:1.5rem;">Go to Login →</a>
+  </div>
+</div>
+{% endblock %}

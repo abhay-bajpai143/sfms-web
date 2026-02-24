@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block extra_style %}
+<style>
+body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-wrap { width: 100%; max-width: 420px; padding: 1rem; animation: fadeUp 0.5s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+.login-logo { text-align:center; margin-bottom:2rem; }
+.login-logo .icon { font-size:3rem; display:block; margin-bottom:0.75rem; }
+.login-logo h1 { font-family:var(--mono); font-size:1.4rem; color:var(--accent); letter-spacing:2px; }
+.login-logo p  { font-size:13px; color:var(--muted); margin-top:4px; }
+.login-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:2rem; box-shadow:0 20px 60px rgba(0,0,0,0.4); }
+.register-link { text-align:center; margin-top:1.25rem; font-size:13px; color:var(--muted); }
+.register-link a { color:var(--accent); text-decoration:none; }
+.pw-rules { font-size:11px; color:var(--muted); margin-top:6px; line-height:1.6; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-logo">
+    <span class="icon">👤</span>
+    <h1>SFMS</h1>
+    <p>Create a new account</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="alerts">
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="login-card">
+    <h2 style="font-size:1.1rem;margin-bottom:1.5rem;font-weight:600;">Register</h2>
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" type="text" name="username" required autofocus placeholder="Choose a username"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" name="password" required placeholder="Strong password"/>
+        <p class="pw-rules">Must have: 8+ chars · uppercase · lowercase · number · special char</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input class="form-input" type="password" name="confirm_password" required placeholder="Repeat password"/>
+      </div>
+      <button class="btn btn-primary btn-full" type="submit">Create Account →</button>
+    </form>
+    <div class="register-link">Already have an account? <a href="{{ url_for('login') }}">Login</a></div>
+  </div>
+</div>
+{% endblock %}

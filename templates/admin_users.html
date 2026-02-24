@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+{% block body %}
+<div class="page">
+  <div class="page-header">
+    <h1>👥 User Management</h1>
+    <p>Manage user accounts and permissions</p>
+  </div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="alerts">
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th><th>Role</th><th>Last Login</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-family:var(--mono);font-size:13px;">{{ u.username }}</td>
+          <td><span class="badge badge-{{ u.role }}">{{ u.role }}</span></td>
+          <td style="color:var(--muted);font-size:13px;">{{ u.last_login or 'Never' }}</td>
+          <td>
+            {% if u.locked %}
+            <span style="color:var(--red);font-size:13px;font-weight:500;">🔒 Locked</span>
+            {% else %}
+            <span style="color:var(--green);font-size:13px;font-weight:500;">✅ Active</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.username != username %}
+            <div class="actions">
+              {% if u.locked %}
+              <form method="POST" action="{{ url_for('unlock_user', target=u.username) }}">
+                <button class="btn btn-success btn-sm" type="submit">Unlock</button>
+              </form>
+              {% else %}
+              <form method="POST" action="{{ url_for('lock_user', target=u.username) }}" onsubmit="return confirm('Lock {{ u.username }}?')">
+                <button class="btn btn-danger btn-sm" type="submit">Lock</button>
+              </form>
+              {% endif %}
+            </div>
+            {% else %}
+            <span style="color:var(--muted);font-size:12px;">You</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

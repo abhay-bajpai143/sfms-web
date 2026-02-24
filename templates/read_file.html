@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ filename }}{% endblock %}
+{% block body %}
+<div class="page">
+  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-sm">← Back</a>
+    <h1 style="font-size:1.2rem;font-weight:600;font-family:var(--mono);">{{ filename }}</h1>
+  </div>
+  <div class="card">
+    <pre style="font-family:var(--mono);font-size:13px;color:var(--text);white-space:pre-wrap;word-break:break-all;line-height:1.7;">{{ content }}</pre>
+  </div>
+</div>
+{% endblock %}

@@ -294,9 +294,11 @@ def encrypt_file_route(filename):
         flash(f"'{filename}' is already encrypted.", "warning")
         return redirect(url_for("dashboard"))
 
+    enc_password = request.form.get("enc_password") or session.get("enc_password", "defaultKey")
+
     tmp = path + ".enc_tmp"
     try:
-        encrypt_file(path, tmp, session.get("enc_password", "defaultKey"))
+        encrypt_file(path, tmp, enc_password)
         os.replace(tmp, path)
         flash(f"'{filename}' encrypted successfully! 🔒", "success")
     except Exception as e:
@@ -319,14 +321,18 @@ def decrypt_file_route(filename):
         flash(f"'{filename}' is not encrypted.", "warning")
         return redirect(url_for("dashboard"))
 
+    # Get password from form (user entered in modal) or session fallback
+    enc_password = request.form.get("enc_password") or session.get("enc_password", "defaultKey")
+    reason = request.form.get("reason", "No reason provided")
+
     tmp = path + ".dec_tmp"
     try:
-        decrypt_file(path, tmp, session.get("enc_password", "defaultKey"))
+        decrypt_file(path, tmp, enc_password)
         os.replace(tmp, path)
-        flash(f"'{filename}' decrypted successfully! 🔓", "success")
+        flash(f"'{filename}' decrypted successfully! 🔓 Reason: {reason}", "success")
     except ValueError:
         if os.path.exists(tmp): os.remove(tmp)
-        flash("Decryption failed: wrong encryption password.", "error")
+        flash("Decryption failed: wrong password. Make sure you use the same password used during encryption.", "error")
     return redirect(url_for("dashboard"))
 
 

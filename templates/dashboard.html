@@ -2,18 +2,26 @@
 {% block title %}Dashboard{% endblock %}
 {% block extra_style %}
 <style>
-.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-@media(max-width:700px){.grid-2{grid-template-columns:1fr;}}
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
 .modal-overlay.open { display:flex; }
 .modal { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:2rem; width:100%; max-width:460px; animation:fadeUp 0.25s ease; }
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-.modal h2 { font-size:1.1rem; font-weight:600; margin-bottom:1.5rem; }
-.modal-close { float:right; background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.2rem; }
+.modal-close { float:right; background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.2rem; line-height:1; }
 .empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); }
-.empty-state .icon { font-size:3rem; margin-bottom:1rem; }
 .toolbar { display:flex; gap:0.75rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center; }
 .toolbar-right { margin-left:auto; display:flex; gap:0.75rem; }
+.modal-encrypt { border-color:rgba(0,212,255,0.3); }
+.modal-encrypt h2 { text-align:center; color:var(--accent); }
+.modal-decrypt { border-color:rgba(0,230,118,0.3); }
+.modal-decrypt h2 { text-align:center; color:var(--green); }
+.modal-delete { border-color:rgba(255,61,113,0.3); }
+.modal-delete h2 { color:var(--red); text-align:center; }
+.info-box { border-radius:10px; padding:0.85rem 1rem; font-size:12px; line-height:1.6; margin-bottom:1.25rem; }
+.info-box-blue  { background:rgba(0,212,255,0.07);  border:1px solid rgba(0,212,255,0.2);  color:var(--accent); }
+.info-box-green { background:rgba(0,230,118,0.07);  border:1px solid rgba(0,230,118,0.2);  color:var(--green); }
+.info-box-red   { background:rgba(255,61,113,0.07); border:1px solid rgba(255,61,113,0.2); color:var(--red); }
+.filename-tag { display:inline-block; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-family:var(--mono); font-size:13px; color:var(--text); margin-bottom:1.25rem; word-break:break-all; }
+.modal-icon { font-size:2.5rem; text-align:center; margin-bottom:0.75rem; }
 </style>
 {% endblock %}
 {% block body %}
@@ -27,9 +35,7 @@
     {% if messages %}
     <div class="alerts">
       {% for cat, msg in messages %}
-      <div class="alert alert-{{ 'error' if cat=='error' else ('success' if cat=='success' else ('warning' if cat=='warning' else 'info')) }}">
-        {{ msg }}
-      </div>
+      <div class="alert alert-{{ 'error' if cat=='error' else ('success' if cat=='success' else ('warning' if cat=='warning' else 'info')) }}">{{ msg }}</div>
       {% endfor %}
     </div>
     {% endif %}
@@ -37,19 +43,19 @@
 
   <!-- Stats -->
   <div class="stats-grid">
-    <div class="stat-card" style="--accent-color: var(--accent);">
+    <div class="stat-card" style="--accent-color:var(--accent);">
       <div class="stat-num" style="color:var(--accent);">{{ total_files }}</div>
       <div class="stat-label">Total Files</div>
     </div>
-    <div class="stat-card" style="--accent-color: var(--orange);">
+    <div class="stat-card" style="--accent-color:var(--orange);">
       <div class="stat-num" style="color:var(--orange);">{{ encrypted_count }}</div>
       <div class="stat-label">Encrypted</div>
     </div>
-    <div class="stat-card" style="--accent-color: var(--green);">
+    <div class="stat-card" style="--accent-color:var(--green);">
       <div class="stat-num" style="color:var(--green);">{{ total_files - encrypted_count }}</div>
       <div class="stat-label">Unencrypted</div>
     </div>
-    <div class="stat-card" style="--accent-color: var(--red);">
+    <div class="stat-card" style="--accent-color:var(--red);">
       <div class="stat-num" style="color:var(--red);">{{ threat_summary.active_lockouts|length }}</div>
       <div class="stat-label">Active Lockouts</div>
     </div>
@@ -58,8 +64,8 @@
   <!-- Toolbar -->
   <div class="toolbar">
     {% if role in ['admin','user'] %}
-    <button class="btn btn-primary" onclick="document.getElementById('uploadModal').classList.add('open')">⬆ Upload File</button>
-    <button class="btn btn-accent" onclick="document.getElementById('createModal').classList.add('open')">✏️ Create File</button>
+    <button class="btn btn-primary" onclick="openModal('uploadModal')">⬆ Upload File</button>
+    <button class="btn btn-accent"  onclick="openModal('createModal')">✏️ Create File</button>
     {% endif %}
     {% if role == 'admin' %}
     <div class="toolbar-right">
@@ -75,19 +81,11 @@
       <h2 style="font-size:1rem;font-weight:600;">📁 Stored Files</h2>
       <span style="font-size:12px;color:var(--muted);">{{ total_files }} file{{ 's' if total_files != 1 else '' }}</span>
     </div>
-
     {% if files %}
     <div class="table-wrap">
       <table>
         <thead>
-          <tr>
-            <th>Filename</th>
-            <th>Size</th>
-            <th>Owner</th>
-            <th>Modified</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
+          <tr><th>Filename</th><th>Size</th><th>Owner</th><th>Modified</th><th>Status</th><th>Actions</th></tr>
         </thead>
         <tbody>
         {% for file in files %}
@@ -110,17 +108,11 @@
               {% endif %}
               {% if role in ['admin','user'] %}
                 {% if not file.encrypted %}
-                <form method="POST" action="{{ url_for('encrypt_file_route', filename=file.name) }}" style="display:inline;">
-                  <button class="btn btn-accent btn-sm" type="submit">🔒 Encrypt</button>
-                </form>
+                <button class="btn btn-accent btn-sm" onclick="openEncryptModal('{{ file.name }}')">🔒 Encrypt</button>
                 {% else %}
-                <form method="POST" action="{{ url_for('decrypt_file_route', filename=file.name) }}" style="display:inline;">
-                  <button class="btn btn-success btn-sm" type="submit">🔓 Decrypt</button>
-                </form>
+                <button class="btn btn-success btn-sm" onclick="openDecryptModal('{{ file.name }}')">🔓 Decrypt</button>
                 {% endif %}
-                <form method="POST" action="{{ url_for('delete_file', filename=file.name) }}" style="display:inline;" onsubmit="return confirm('Delete {{ file.name }}?');">
-                  <button class="btn btn-danger btn-sm" type="submit">🗑 Delete</button>
-                </form>
+                <button class="btn btn-danger btn-sm" onclick="openDeleteModal('{{ file.name }}')">🗑 Delete</button>
               {% endif %}
             </div>
           </td>
@@ -139,11 +131,100 @@
   </div>
 </div>
 
-<!-- Upload Modal -->
-<div class="modal-overlay" id="uploadModal" onclick="if(event.target===this)this.classList.remove('open')">
+<!-- ENCRYPT MODAL -->
+<div class="modal-overlay" id="encryptModal" onclick="if(event.target===this)closeModal('encryptModal')">
+  <div class="modal modal-encrypt">
+    <button class="modal-close" onclick="closeModal('encryptModal')">✕</button>
+    <div class="modal-icon">🔒</div>
+    <h2>Encrypt File</h2>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin:0.5rem 0 1.25rem;">
+      File: <span class="filename-tag" id="encryptFileName"></span>
+    </p>
+    <div class="info-box info-box-blue">
+      🛡️ This file will be encrypted using <strong>AES-256-GCM</strong>.
+      Set a password below — <strong>remember it</strong>, you will need it to decrypt later.
+    </div>
+    <form method="POST" id="encryptForm" action="">
+      <div class="form-group">
+        <label class="form-label">Encryption Password</label>
+        <input class="form-input" type="password" name="enc_password" id="encryptPassword" required placeholder="Enter a strong password"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input class="form-input" type="password" id="encryptConfirm" required placeholder="Repeat your password"/>
+        <p id="encryptMatchMsg" style="font-size:11px;margin-top:4px;"></p>
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+        <button class="btn btn-accent btn-full" type="submit" id="encryptSubmitBtn" disabled style="opacity:0.4;cursor:not-allowed;">🔒 Encrypt Now</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal('encryptModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DECRYPT MODAL -->
+<div class="modal-overlay" id="decryptModal" onclick="if(event.target===this)closeModal('decryptModal')">
+  <div class="modal modal-decrypt">
+    <button class="modal-close" onclick="closeModal('decryptModal')">✕</button>
+    <div class="modal-icon">🔓</div>
+    <h2>Decrypt File</h2>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin:0.5rem 0 1.25rem;">
+      File: <span class="filename-tag" id="decryptFileName"></span>
+    </p>
+    <div class="info-box info-box-green">
+      🔑 Enter the <strong>exact same password</strong> you used when encrypting this file.
+      Wrong password = decryption fails, file stays encrypted safely.
+    </div>
+    <form method="POST" id="decryptForm" action="">
+      <div class="form-group">
+        <label class="form-label">Decryption Password</label>
+        <input class="form-input" type="password" name="enc_password" id="decryptPassword" required placeholder="Enter your encryption password"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reason for Decryption</label>
+        <input class="form-input" type="text" name="reason" placeholder="e.g. Review document, Edit content..." required/>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;">📋 This reason is logged in the security audit trail.</p>
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+        <button class="btn btn-success btn-full" type="submit">🔓 Decrypt Now</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal('decryptModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal" onclick="if(event.target===this)closeModal('deleteModal')">
+  <div class="modal modal-delete">
+    <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    <div class="modal-icon">🗑️</div>
+    <h2>Delete File</h2>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin:0.5rem 0 1.25rem;">
+      File: <span class="filename-tag" id="deleteFileName"></span>
+    </p>
+    <div class="info-box info-box-red">
+      ⚠️ This action is <strong>permanent and cannot be undone</strong>.
+      The file will be completely removed from secure storage.
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Type the filename to confirm deletion:</p>
+    <div class="form-group">
+      <input class="form-input" type="text" id="deleteConfirmInput" placeholder="Type filename here" oninput="checkDeleteConfirm()"/>
+    </div>
+    <form method="POST" id="deleteForm" action="">
+      <div style="display:flex;gap:0.75rem;">
+        <button class="btn btn-danger btn-full" type="submit" id="deleteSubmitBtn" disabled style="opacity:0.4;cursor:not-allowed;">🗑 Yes, Delete Permanently</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="modal-overlay" id="uploadModal" onclick="if(event.target===this)closeModal('uploadModal')">
   <div class="modal">
-    <button class="modal-close" onclick="document.getElementById('uploadModal').classList.remove('open')">✕</button>
-    <h2>⬆ Upload File</h2>
+    <button class="modal-close" onclick="closeModal('uploadModal')">✕</button>
+    <h2>⬆️ Upload File</h2>
+    <div class="info-box info-box-blue">📁 File will be stored in secure storage. You can encrypt it afterwards.</div>
     <form method="POST" action="{{ url_for('upload') }}" enctype="multipart/form-data">
       <div class="form-group">
         <label class="form-label">Choose File</label>
@@ -151,16 +232,16 @@
       </div>
       <div style="display:flex;gap:0.75rem;margin-top:1.5rem;">
         <button class="btn btn-primary btn-full" type="submit">Upload</button>
-        <button type="button" class="btn btn-ghost" onclick="document.getElementById('uploadModal').classList.remove('open')">Cancel</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal('uploadModal')">Cancel</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Create File Modal -->
-<div class="modal-overlay" id="createModal" onclick="if(event.target===this)this.classList.remove('open')">
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="createModal" onclick="if(event.target===this)closeModal('createModal')">
   <div class="modal">
-    <button class="modal-close" onclick="document.getElementById('createModal').classList.remove('open')">✕</button>
+    <button class="modal-close" onclick="closeModal('createModal')">✕</button>
     <h2>✏️ Create Text File</h2>
     <form method="POST" action="{{ url_for('create_file_route') }}">
       <div class="form-group">
@@ -173,9 +254,77 @@
       </div>
       <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
         <button class="btn btn-primary btn-full" type="submit">Create File</button>
-        <button type="button" class="btn btn-ghost" onclick="document.getElementById('createModal').classList.remove('open')">Cancel</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
       </div>
     </form>
   </div>
 </div>
+
+<script>
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Encrypt modal ──
+function openEncryptModal(filename) {
+  document.getElementById('encryptFileName').textContent = filename;
+  document.getElementById('encryptForm').action = '/encrypt/' + encodeURIComponent(filename);
+  document.getElementById('encryptPassword').value = '';
+  document.getElementById('encryptConfirm').value = '';
+  document.getElementById('encryptMatchMsg').textContent = '';
+  const btn = document.getElementById('encryptSubmitBtn');
+  btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
+  openModal('encryptModal');
+  setTimeout(() => document.getElementById('encryptPassword').focus(), 100);
+}
+document.getElementById('encryptConfirm').addEventListener('input', function() {
+  const pw  = document.getElementById('encryptPassword').value;
+  const msg = document.getElementById('encryptMatchMsg');
+  const btn = document.getElementById('encryptSubmitBtn');
+  if (!this.value) { msg.textContent = ''; return; }
+  if (this.value === pw) {
+    msg.textContent = '✅ Passwords match'; msg.style.color = 'var(--green)';
+    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+  } else {
+    msg.textContent = '✗ Passwords do not match'; msg.style.color = 'var(--red)';
+    btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
+  }
+});
+
+// ── Decrypt modal ──
+function openDecryptModal(filename) {
+  document.getElementById('decryptFileName').textContent = filename;
+  document.getElementById('decryptForm').action = '/decrypt/' + encodeURIComponent(filename);
+  document.getElementById('decryptPassword').value = '';
+  openModal('decryptModal');
+  setTimeout(() => document.getElementById('decryptPassword').focus(), 100);
+}
+
+// ── Delete modal ──
+let _deleteTarget = '';
+function openDeleteModal(filename) {
+  _deleteTarget = filename;
+  document.getElementById('deleteFileName').textContent = filename;
+  document.getElementById('deleteForm').action = '/delete/' + encodeURIComponent(filename);
+  document.getElementById('deleteConfirmInput').value = '';
+  const btn = document.getElementById('deleteSubmitBtn');
+  btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
+  openModal('deleteModal');
+  setTimeout(() => document.getElementById('deleteConfirmInput').focus(), 100);
+}
+function checkDeleteConfirm() {
+  const val = document.getElementById('deleteConfirmInput').value;
+  const btn = document.getElementById('deleteSubmitBtn');
+  if (val === _deleteTarget) {
+    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
+  }
+}
+
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    ['encryptModal','decryptModal','deleteModal','uploadModal','createModal'].forEach(closeModal);
+});
+</script>
 {% endblock %}

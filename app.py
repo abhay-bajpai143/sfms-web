@@ -271,11 +271,17 @@ def delete_file(filename):
         return redirect(url_for("dashboard"))
 
     path = safe_path(filename)
-    if os.path.exists(path):
-        os.remove(path)
-        flash(f"'{filename}' deleted.", "success")
-    else:
+    if not os.path.exists(path):
         flash("File not found.", "error")
+        return redirect(url_for("dashboard"))
+
+    # Block deletion if file is encrypted
+    if is_encrypted(path):
+        flash(f"Cannot delete '{filename}' — file is encrypted. Decrypt it first before deleting.", "error")
+        return redirect(url_for("dashboard"))
+
+    os.remove(path)
+    flash(f"'{filename}' deleted successfully.", "success")
     return redirect(url_for("dashboard"))
 
 

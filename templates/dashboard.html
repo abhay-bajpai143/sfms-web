@@ -112,7 +112,11 @@
                 {% else %}
                 <button class="btn btn-success btn-sm" onclick="openDecryptModal('{{ file.name }}')">🔓 Decrypt</button>
                 {% endif %}
+                {% if file.encrypted %}
+                <button class="btn btn-danger btn-sm" disabled title="Decrypt file first before deleting" style="opacity:0.35;cursor:not-allowed;">🔒 Locked</button>
+                {% else %}
                 <button class="btn btn-danger btn-sm" onclick="openDeleteModal('{{ file.name }}')">🗑 Delete</button>
+                {% endif %}
               {% endif %}
             </div>
           </td>
